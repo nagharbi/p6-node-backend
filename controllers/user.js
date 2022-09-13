@@ -1,9 +1,6 @@
 
 const bcrypt = require('bcrypt');
-const { use } = require('../app');
-
 const user = require('../models/user');
-
 
 exports.signup = (req, res, next) => {
     bcrypt.hash(req.body.password, 10)
@@ -14,14 +11,35 @@ exports.signup = (req, res, next) => {
         });
         user.save()
         .then(() => res.status(201).json({message : 'utilisateur créé !'}))
-        .catch(Error => res.status(400).json({ Error}));
+        .catch(error => res.status(400).json({ error}));
     })
-    .catch(Error => res.status(500).json({Error}));
+    .catch(error => res.status(500).json({error}));
 };
 
-
-
 // pour connecter utlisateur existant 
-exports.login = (req, res, next) => {
-
-}
+exports.login = (req, res, next) => {   
+    user.findOne ({email: req.body.email})
+    .then(user => {
+        if (user === null) {
+            res.status(401).json({message:'paire identifiant / mot de passe incorrecte'});
+        } else {
+            bcrypt.compare(req.body.password, user.password)
+            .then(valid =>{
+                if (!valid) {
+                    res.status(401).json({message:'paire identifiant / mot de passe incorrecte'})
+                } else {
+                    res.status(200).json({
+                        userId : user._id,
+                        token :'TOKEN'
+                    });
+                }
+            })
+            .catch(error => {
+                res.status(500).json({error});
+            }); 
+        }
+    })
+    .catch(error =>{
+        res.status(500).json({error});
+    })
+};
