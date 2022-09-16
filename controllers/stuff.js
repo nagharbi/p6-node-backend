@@ -3,17 +3,30 @@ const Thing = require('../models/thing');
 // enregistrer des objets dans base se donnée
 // L'opérateur spread ... est utilisé pour faire une copie de tous les éléments de req.body
 // save() qui enregistre Thing dans la base de donnée
-exports.createThing = (req, res) => {
-  console.log(req.body)
-    delete req.body._id;
+  exports.createThing = (req, res, next) => {
+    const thingObject = JSON.parse(req.body.thing);
+    delete thingObject._id;
+    delete thingObject._userId;
     const thing = new Thing({
-      ...req.body
+        ...thingObject,
+        userId: req.auth.userId,
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     });
+  
     thing.save()
-      .then(() => res.status(201).json({ message: 'Objet enregistré !'}))
-      .catch(error => res.status(400).json({ error }));
-      
-};
+    .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
+    .catch(error => { res.status(400).json( { error })});
+
+  // avant l'ajout du multer 
+    // delete req.body._id;
+    // const thing = new Thing({
+    //   ...req.body
+    // });
+    // thing.save()
+    //   .then(() => res.status(201).json({ message: 'Objet enregistré !'}))
+    //   .catch(error => res.status(400).json({ error }));
+    //};
+ };
 
 // modifier un Thing existant
 exports.updateThing = (req, res)=>{
