@@ -1,4 +1,5 @@
 const Thing = require('../models/thing');
+const fs = require('fs');
 
 // enregistrer des objets dans base se donnée
 // L'opérateur spread ... est utilisé pour faire une copie de tous les éléments de req.body
@@ -56,11 +57,29 @@ exports.updateThing = (req, res, next) => {
 };
 
 // supprimer
-exports.deleteThing = (req, res) => {
-    Thing.deleteOne({ _id: req.params.id })
-      .then(() => res.status(200).json({ message: 'Objet supprimé !'}))
-      .catch(error => res.status(400).json({ error }));
-};
+  exports.deleteThing = (req, res, next) => {
+    Thing.findOne({ _id: req.params.id})
+        .then(thing => {
+            if (thing.userId != req.auth.userId) {
+                res.status(401).json({message: 'Not authorized'});
+            } else {
+                const filename = thing.imageUrl.split('/images/')[1];
+                fs.unlink(`images/${filename}`, () => {
+                    Thing.deleteOne({_id: req.params.id})
+                        .then(() => { res.status(200).json({message: 'Objet supprimé !'})})
+                        .catch(error => res.status(401).json({ error }));
+                });
+            }
+        })
+        .catch( error => {
+            res.status(500).json({ error });
+        }); 
+        
+        // Thing.deleteOne({ _id: req.params.id })
+    //   .then(() => res.status(200).json({ message: 'Objet supprimé !'}))
+    //   .catch(error => res.status(400).json({ error }));
+ };
+   
 
 // la route "GET ONE"
 exports.getThing = (req, res) => {
